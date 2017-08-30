@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.neural_network import MLPRegressor
 from sklearn.model_selection import GridSearchCV, train_test_split
 import time, sys
+import argparse
 
 ### DEFINE and INPUT ###
 
@@ -332,43 +333,43 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
 
 ### INPUT ###
 
-descfile = "test_features_1000.npy"
-predfile = "test_labels_1000.npy"
-ML_METHOD = "krr"
-IS_SPARSE = False
 
+parser = argparse.ArgumentParser(description='Process runtype and filenames.')
 
+parser.add_argument('arguments', metavar='cla', type=str, nargs='+',
+                   help='[Runtype] [descriptor] [predictor] [krr or mlp]')
 
-default_arguments = ["run", None, None, "3"]
-arguments = default_arguments
-print(sys.argv)
-if len(sys.argv) > 1:
-    for i in range(1,len(sys.argv)):
-        if i > 1:
-            sys.argv[i]  = int(sys.argv[i])
-        arguments[i -1] = sys.argv[i]
+args = parser.parse_args()
+print("Arguments passed:")
+print(args.arguments)
+
+runtype = args.arguments[0]
+descfile = args.arguments[1]
+predfile = args.arguments[2]
+ML_METHOD = args.arguments[3]
+if "npz" in descfile:
+    IS_SPARSE = True
 else:
-    print("Usage: python3 SCRIPTNAME [param or run or size] ")
+    IS_SPARSE = False
 
-print("Arguments:", arguments)
 
 ### PROCESS ###
 
-if arguments[0] == "param":
+if runtype == "param":
     ml_param_scan(descfile, predfile,
         alpha_list= np.logspace(-1, -9, 9),
         gamma_list = np.logspace(-1, -9, 9), kernel_list = ['rbf'], 
         layer_list = [(40,40,40)], learning_rate_list = [0.001], 
         is_sparse = IS_SPARSE,
-        sample_size=0.5, ml_method = ML_METHOD)
+        sample_size=0.1, ml_method = ML_METHOD)
 
-elif arguments[0] == "run":
+elif runtype == "run":
     ml_run(descfile, predfile, 
         alpha0=1e-4, gamma0=1e-03, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
         is_sparse = IS_SPARSE, sample_size=0.1, ml_method = ML_METHOD)
 
-elif arguments[0] == "size":
+elif runtype == "size":
     ml_size_scan(descfile, predfile,  
         alpha0=1e-9, gamma0=1e-10, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
@@ -376,12 +377,12 @@ elif arguments[0] == "size":
         sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
         ml_method = ML_METHOD)
 
-elif arguments[0] == "psize":
+elif runtype == "psize":
     ml_param_size_scan(descfile, predfile, alpha_list= np.logspace(-1, -8, 8), 
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
-    layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = False, 
+    layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = IS_SPARSE, 
     sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 0.9999], 
-    ml_method = "krr", testset_size=0.1)
+    ml_method = ML_METHOD, testset_size=0.1)
 
 else:
     print("First argument not understood:")
