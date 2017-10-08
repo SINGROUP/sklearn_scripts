@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH -p batch #partition
-#SBATCH -t 03:30:00
-#SBATCH --mem-per-cpu=5000
+#SBATCH -p debug #partition
+#SBATCH -t 00:30:00
+#SBATCH --mem-per-cpu=4000
 #SBATCH -o sbatch-hsw-%j.out
-#SBATCH -n 20
+#SBATCH -n 16
 ##SBATCH -c 4
 #SBATCH -N 1
 ##SBATCH --constraint=hsw
@@ -22,10 +22,11 @@ source activate /scratch/work/jagerm1/custom_env/np_scipy_sklearn
 
 echo "start"
 echo $work_dir
-
 echo "Running Python sklearn_krr_mlp.py"
-python3 sklearn_krr_mlp.py run featurepath labelpath krr
+python3 sklearn_krr_mlp.py size featurepath labelpath krr
 
+
+./get_size_vs_mae.sh
 ############################################################################
 echo "Name of the partition in which the job is running: $SLURM_JOB_PARTITION"
 echo "Name of the node running the job script: $SLURMD_NODENAME"

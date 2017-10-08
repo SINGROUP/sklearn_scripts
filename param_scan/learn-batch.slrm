@@ -24,8 +24,10 @@ echo "start"
 echo $work_dir
 
 echo "Running Python sklearn_krr_mlp.py"
-python3 sklearn_krr_mlp.py run featurepath labelpath krr
+# $1 = features
+# $2 = labels
 
+python3 sklearn_krr_mlp.py param $1 $2 krr
 ############################################################################
 echo "Name of the partition in which the job is running: $SLURM_JOB_PARTITION"
 echo "Name of the node running the job script: $SLURMD_NODENAME"

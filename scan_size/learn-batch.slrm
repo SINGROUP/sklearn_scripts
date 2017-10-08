@@ -24,8 +24,9 @@ echo "start"
 echo $work_dir
 
 echo "Running Python sklearn_krr_mlp.py"
-python3 sklearn_krr_mlp.py run featurepath labelpath krr
+python3 sklearn_krr_mlp.py size featurepath labelpath krr
 
+./get_size_vs_mae.sh
 ############################################################################
 echo "Name of the partition in which the job is running: $SLURM_JOB_PARTITION"
 echo "Name of the node running the job script: $SLURMD_NODENAME"
