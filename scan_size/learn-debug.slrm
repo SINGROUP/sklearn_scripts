@@ -23,7 +23,7 @@ source activate /scratch/work/jagerm1/custom_env/np_scipy_sklearn
 echo "start"
 echo $work_dir
 echo "Running Python sklearn_krr_mlp.py"
-python3 sklearn_krr_mlp.py size featurepath labelpath krr
+python3 sklearn_krr_mlp.py size $1 $2 krr
 
 
 ./get_size_vs_mae.sh
