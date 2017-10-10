@@ -332,8 +332,6 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
     return
 
 ### INPUT ###
-
-
 parser = argparse.ArgumentParser(description='Process runtype and filenames.')
 
 parser.add_argument('arguments', metavar='cla', type=str, nargs='+',
@@ -365,13 +363,13 @@ if runtype == "param":
 
 elif runtype == "run":
     ml_run(descfile, predfile, 
-        alpha0=1e-4, gamma0=1e-03, kernel0 = 'rbf', 
+        alpha0=1e-3, gamma0=1e-05, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
         is_sparse = IS_SPARSE, sample_size=0.1, ml_method = ML_METHOD)
 
 elif runtype == "size":
     ml_size_scan(descfile, predfile,  
-        alpha0=1e-9, gamma0=1e-10, kernel0 = 'rbf', 
+        alpha0=1e-3, gamma0=1e-5, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
         is_sparse = IS_SPARSE, 
         sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
@@ -386,9 +384,6 @@ elif runtype == "psize":
 
 else:
     print("First argument not understood:")
-    print("Usage: python3 SCRIPTNAME [param or run or size] [alpha] [gamma] [sigma = 3] ")
     exit(1)
 
-
 ### OUTPUT ###
-
