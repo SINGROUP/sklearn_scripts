@@ -1,6 +1,13 @@
 # sklearn_scripts
 Scripts for running MLP and KRR using the python package scikitlearn.
 
+Input files need to be in npy or sparse matrix (npz) format.
+One datapoint per row, one feature per column.
+
+In order to change a file from csv to numpy, call
+
+csv_to_numpy.py csvfilename
+
 Folder param_scan:
 
 If you run
