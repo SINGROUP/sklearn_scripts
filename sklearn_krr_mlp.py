@@ -367,16 +367,14 @@ elif runtype == "size":
         alpha0=1e-9, gamma0=1e-10, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
         is_sparse = IS_SPARSE, 
-        #sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
-        sample_size_list = [0.005, 0.01, 0.03, 0.05], 
+        sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
         ml_method = ML_METHOD)
 
 elif runtype == "psize":
     ml_param_size_scan(descfile, predfile, alpha_list= np.logspace(-1, -8, 8), 
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
     layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = IS_SPARSE, 
-    #sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9,], 
-    sample_size_list = [0.005, 0.01, 0.03], 
+    sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9,], 
     ml_method = ML_METHOD, testset_size=0.5)
 
 else:
