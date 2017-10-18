@@ -375,7 +375,7 @@ elif runtype == "psize":
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
     layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = IS_SPARSE, 
     sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9,], 
-    ml_method = ML_METHOD, testset_size=0.5)
+    ml_method = ML_METHOD, testset_size=0.11)
 
 else:
     print("First argument not understood:")
