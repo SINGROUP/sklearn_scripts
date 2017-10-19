@@ -23,7 +23,9 @@ source activate /scratch/work/jagerm1/custom_env/np_scipy_sklearn
 echo "start"
 echo $work_dir
 echo "Running Python sklearn_krr_mlp.py"
-python3 sklearn_krr_mlp.py run featurepath labelpath krr
+# $1 : featurepath
+# $2 : labelpath
+python3 sklearn_krr_mlp.py psize $1 $2 krr
 
 ############################################################################
 echo "Name of the partition in which the job is running: $SLURM_JOB_PARTITION"

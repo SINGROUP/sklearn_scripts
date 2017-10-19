@@ -233,7 +233,7 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
     layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = False, 
     sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
-    ml_method = "krr", testset_size=0.1):
+    ml_method = "krr", paramset_size=0.1):
     print('model ' + ml_method)
 
     # Load all the data
@@ -247,7 +247,7 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
 
     # search for optimal learner parameters
     # reduce set
-    x_train, x_test, y_train, y_test, ids_train, ids_test = train_test_split(ax_train, ay_train, aids_train, test_size = testset_size,)
+    x_train, x_test, y_train, y_test, ids_train, ids_test = train_test_split(ax_train, ay_train, aids_train, test_size = 1 - paramset_size,)
 
     if ml_method == "krr":
         # Create kernel linear ridge regression object
@@ -275,7 +275,7 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
     mae, mse, y_pred, train_y_pred, learner_best = predict_and_error(learner_best, x_test, x_train, y_test)
 
     ### OUTPUT ###
-    write_output(learner, max_sample_size * (1 - testset_size), ml_method, mae, mse, "param", ids_test, y_test, y_pred, ids_train, y_train, train_y_pred)
+    write_output(learner, max_sample_size *  paramset_size, ml_method, mae, mse, "param", ids_test, y_test, y_pred, ids_train, y_train, train_y_pred)
 
 
     # use above found best parameters
@@ -374,8 +374,8 @@ elif runtype == "psize":
     ml_param_size_scan(descfile, predfile, alpha_list= np.logspace(-1, -8, 8), 
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
     layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = IS_SPARSE, 
-    sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9,], 
-    ml_method = ML_METHOD, testset_size=0.11)
+    sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,], 
+    ml_method = ML_METHOD, paramset_size=0.11)
 
 else:
     print("First argument not understood:")
