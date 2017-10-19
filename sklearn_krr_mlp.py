@@ -10,8 +10,37 @@ import argparse
 
 ### DEFINE and INPUT ###
 
-def load_data(is_sparse, x_datafile, y_datafile):
+def load_data(x_datafile, y_datafile, ids, testfiles):
+    # check if matrix is sparse by file ending
+    if "npz" in descfile:
+        is_sparse = True
+    else:
+        is_sparse = False
+
+    ids_train = None
+    ids_test = None
+    x_test = None
+    y_test = None
     # Load all the data
+    # training and test is split by ID
+    if ids:
+        ids_train = np.load(ids[0])
+        ids_test = np.load(ids[1])
+    # training and test is split by file
+    elif testfiles:
+        if is_sparse:
+            x_test = load_npz(testfiles[0])
+            is_mean = False
+        else:
+            x_test = np.load(testfiles[0])
+            is_mean = True
+        y_test = np.load(testfiles[1])
+        # discard other columns except first
+        if len(y_test.shape) > 1:
+            y_test = y_test[:, 0]
+        # create pythonic ids
+        ids_test = np.arange(len(y_test))
+
     if is_sparse:
         x_data = load_npz(x_datafile)
         is_mean = False
@@ -24,12 +53,28 @@ def load_data(is_sparse, x_datafile, y_datafile):
         y_data = y_data[:, 0]
     # create pythonic ids
     ids = np.arange(len(y_data))
-    return x_data, y_data, ids, is_mean
+    return x_data, y_data, ids, is_mean, is_sparse, ids_train, ids_test, x_test, y_test
 
-def split_and_scale_data(x_data, y_data, ids, sample_size, is_mean):
+def split_data(x_data, y_data, ids_data, sample_size, is_mean, is_sparse, ids, ids_train, ids_test):
     # split set 
-    x_train, x_test, y_train, y_test, ids_train, ids_test = train_test_split(x_data, y_data, ids, test_size = 1 - sample_size)
+    if ids:
+        if is_sparse:
+            x_data = x_data.tolil()
+        
+        x_train = x_data[ids_train]
+        x_test = x_data[ids_test]
+        y_train = y_data[ids_train]
+        y_test = y_data[ids_test]
+
+        if is_sparse:
+            x_train = x_train.tocsr()
+            x_test = x_test.tocsr()
+    else:
+        x_train, x_test, y_train, y_test, ids_train, ids_test = train_test_split(x_data, y_data, ids_data, test_size = 1 - sample_size)
     
+    return x_train, x_test, y_train, y_test, ids_train, ids_test
+
+def scale_data(is_mean, x_train, x_test):
     # Scale
     scaler = StandardScaler(with_mean=is_mean)  
         # fit only on training data
@@ -37,7 +82,26 @@ def split_and_scale_data(x_data, y_data, ids, sample_size, is_mean):
     x_train = scaler.transform(x_train)  
         # apply same transformation to test data
     x_test = scaler.transform(x_test)  
+    return x_train, x_test
 
+def load_split_scale_data(x_datafile, y_datafile, ids, testfiles,
+    sample_size):
+    # load
+    x_data, y_data, ids_data, is_mean, is_sparse, ids_train, ids_test, x_test, y_test = load_data(
+        x_datafile, y_datafile, ids, testfiles)
+    # split
+    if testfiles:
+        x_train = x_data
+        y_train = y_data
+        x_test = x_test
+        y_test = y_test
+        ids_train = ids_data
+        ids_test = ids_test
+    else:
+        x_train, x_test, y_train, y_test, ids_train, ids_test = split_data(
+            x_data, y_data, ids_data, sample_size, is_mean, is_sparse, ids, ids_train, ids_test)
+        # scale
+    x_train, x_test = scale_data(is_mean, x_train, x_test)
     return x_train, x_test, y_train, y_test, ids_train, ids_test
 
 def predict_and_error(learner, x_test, x_train, y_test):
@@ -101,16 +165,15 @@ def write_output(learner, sample_size, ml_method, mae, mse, runtype, ids_test, y
 
     return None
 
-def ml_param_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8), 
+def ml_param_scan(x_datafile, y_datafile, ids, testfiles, 
+    alpha_list= np.logspace(-1, -8, 8), 
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
-    layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = False,
+    layer_list = [(40,40,40)], learning_rate_list = [0.001],
     sample_size=0.1, ml_method = "krr"):
     print('model ' + ml_method)
-    # Load all the data
-    x_data, y_data, ids, is_mean = load_data(is_sparse, x_datafile, y_datafile)
-    
-    #split set, scale features x
-    x_train, x_test, y_train, y_test, ids_train, ids_test = split_and_scale_data(x_data, y_data, ids, 1 - sample_size , is_mean)
+    # load, split and scale data
+    x_train, x_test, y_train, y_test, ids_train, ids_test = load_split_scale_data(x_datafile, y_datafile, ids, testfiles,
+    sample_size)
 
     if ml_method == "krr":
         # Create kernel linear ridge regression object
@@ -143,17 +206,14 @@ def ml_param_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8),
     return learner.best_params_
 
 
-def ml_run(x_datafile, y_datafile, 
+def ml_run(x_datafile, y_datafile, ids, testfiles, 
     alpha0=1, gamma0=1, kernel0 = 'rbf', learning_rate_init0 = 0.001, 
-    hidden_layer_sizes0=(80, 80, 80), is_sparse = False, 
+    hidden_layer_sizes0=(80, 80, 80), 
     sample_size=0.1, ml_method = "krr"):
     print('model ' + ml_method)
-
-    # Load all the data
-    x_data, y_data, ids, is_mean = load_data(is_sparse, x_datafile, y_datafile)
-    
-    #split set, scale features x
-    x_train, x_test, y_train, y_test, ids_train, ids_test = split_and_scale_data(x_data, y_data, ids, sample_size, is_mean)
+    # load, split and scale data
+    x_train, x_test, y_train, y_test, ids_train, ids_test = load_split_scale_data(x_datafile, y_datafile, ids, testfiles,
+    sample_size)
 
     if ml_method == "krr":
         # Create kernel linear ridge regression object
@@ -176,24 +236,20 @@ def ml_run(x_datafile, y_datafile,
 
     mae, mse, y_pred, train_y_pred, learner = predict_and_error(learner, x_test, x_train, y_test)
 
-
     ### OUTPUT ###
     write_output(learner, sample_size, ml_method, mae, mse, "run", ids_test, y_test, y_pred, ids_train, y_train, train_y_pred)
 
     return None
 
-def ml_size_scan(x_datafile, y_datafile, alpha0=1, gamma0=1, 
+def ml_size_scan(x_datafile, y_datafile, ids, testfiles, 
+    alpha0=1, gamma0=1, 
     kernel0 = 'rbf', learning_rate_init0 = 0.001, 
-    hidden_layer_sizes0=(80, 80, 80), is_sparse = False, 
+    hidden_layer_sizes0=(80, 80, 80),
     sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
-    ml_method = "krr"):
-
-    # Load all the data
-    x_data, y_data, ids, is_mean = load_data(is_sparse, x_datafile, y_datafile)
-    
-    #split set, scale features x
+    ml_method = "krr"):    
     max_sample_size = max(sample_size_list)
-    ax_train, x_test, ay_train, y_test, aids_train, ids_test = split_and_scale_data(x_data, y_data, ids, max_sample_size, is_mean)
+    ax_train, x_test, ay_train, y_test, aids_train, ids_test = load_split_scale_data(x_datafile, y_datafile, ids, testfiles,
+    max_sample_size)
 
     for sample_size in sample_size_list:
         ratio = float(sample_size) / float(max_sample_size)
@@ -229,21 +285,17 @@ def ml_size_scan(x_datafile, y_datafile, alpha0=1, gamma0=1,
 
     return None
 
-def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8), 
+def ml_param_size_scan(x_datafile, y_datafile, ids, testfiles, 
+    alpha_list= np.logspace(-1, -8, 8), 
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
-    layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = False, 
+    layer_list = [(40,40,40)], learning_rate_list = [0.001],
     sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
     ml_method = "krr", paramset_size=0.1):
     print('model ' + ml_method)
-
-    # Load all the data
-    x_data, y_data, ids, is_mean = load_data(is_sparse, x_datafile, y_datafile)
-    
-    #split set, scale features x
     max_sample_size = max(sample_size_list)
-    ax_train, ax_test, ay_train, ay_test, aids_train, aids_test = split_and_scale_data(x_data, y_data, ids, max_sample_size, is_mean)
-
-
+    # load, split and scale data
+    ax_train, ax_test, ay_train, ay_test, aids_train, aids_test = load_split_scale_data(x_datafile, y_datafile, ids, testfiles,
+    max_sample_size)
 
     # search for optimal learner parameters
     # reduce set
@@ -285,11 +337,14 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
     paramlearner = learner
 
     for sample_size in sample_size_list:
-        print("Learning from part of the training set:", sample_size)
-        # reduce set ("test set" is the part of the training set that is used)
-        x_dump, x_train, y_dump, y_train, ids_dump, ids_train = train_test_split(ax_train, ay_train, aids_train, test_size = sample_size,)
-
-
+        ratio = float(sample_size) / float(max_sample_size)
+        if ratio > 0.999:
+            x_train = ax_train
+            y_train = ay_train
+            ids_train = aids_train
+        else:
+            # reduce set ("test set" is the part of the training set that is used)
+            x_dump, x_train, y_dump, y_train, ids_dump, ids_train = train_test_split(ax_train, ay_train, aids_train, test_size = ratio,)
 
         if ml_method == "krr":
             # Create kernel linear ridge regression object
@@ -329,51 +384,54 @@ def ml_param_size_scan(x_datafile, y_datafile, alpha_list= np.logspace(-1, -8, 8
 
 parser = argparse.ArgumentParser(description='Process runtype and filenames.')
 
-parser.add_argument('arguments', metavar='cla', type=str, nargs='+',
+parser.add_argument(dest='positionargs', metavar='cla', type=str, nargs='+',
                    help='[Runtype] [descriptor] [predictor] [krr or mlp]')
+parser.add_argument('--ids', dest='ids', nargs=2, help='path to numpy arrays with indices to use as [training set] [test set]')
+parser.add_argument('--testfiles', dest='testfiles', nargs=2, help='path to test set features and labels. features and labels for training set are given by positional argument')
 
 args = parser.parse_args()
 print("Arguments passed:")
-print(args.arguments)
+print(args.positionargs)
+if args.ids:
+    print('ids for training set', args.ids[0])
+    print('ids for test set', args.ids[1])
+if args.testfiles:
+    print('optional test set files', args.testfiles[0], args.testfiles[1])
 
-runtype = args.arguments[0]
-descfile = args.arguments[1]
-predfile = args.arguments[2]
-ML_METHOD = args.arguments[3]
-if "npz" in descfile:
-    IS_SPARSE = True
-else:
-    IS_SPARSE = False
-
+runtype = args.positionargs[0]
+descfile = args.positionargs[1]
+predfile = args.positionargs[2]
+ML_METHOD = args.positionargs[3]
+ids = args.ids
+testfiles = args.testfiles
 
 ### PROCESS ###
 
 if runtype == "param":
-    ml_param_scan(descfile, predfile,
+    ml_param_scan(descfile, predfile, ids, testfiles,
         alpha_list= np.logspace(-1, -9, 9),
         gamma_list = np.logspace(-1, -9, 9), kernel_list = ['rbf'], 
         layer_list = [(40,40,40)], learning_rate_list = [0.001], 
-        is_sparse = IS_SPARSE,
         sample_size=0.1, ml_method = ML_METHOD)
 
 elif runtype == "run":
-    ml_run(descfile, predfile, 
+    ml_run(descfile, predfile, ids, testfiles,
         alpha0=1e-4, gamma0=1e-03, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
-        is_sparse = IS_SPARSE, sample_size=0.1, ml_method = ML_METHOD)
+        sample_size=0.1, ml_method = ML_METHOD)
 
 elif runtype == "size":
-    ml_size_scan(descfile, predfile,  
+    ml_size_scan(descfile, predfile, ids, testfiles, 
         alpha0=1e-9, gamma0=1e-10, kernel0 = 'rbf', 
         learning_rate_init0 = 0.001, hidden_layer_sizes0=(80, 80, 80), 
-        is_sparse = IS_SPARSE, 
         sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9], 
         ml_method = ML_METHOD)
 
 elif runtype == "psize":
-    ml_param_size_scan(descfile, predfile, alpha_list= np.logspace(-1, -8, 8), 
+    ml_param_size_scan(descfile, predfile, ids, testfiles,
+    alpha_list= np.logspace(-1, -8, 8), 
     gamma_list = np.logspace(-2, -10, 9), kernel_list = ['rbf'], 
-    layer_list = [(40,40,40)], learning_rate_list = [0.001], is_sparse = IS_SPARSE, 
+    layer_list = [(40,40,40)], learning_rate_list = [0.001], 
     sample_size_list = [0.005, 0.01, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9,], 
     ml_method = ML_METHOD, paramset_size=0.11)
 
