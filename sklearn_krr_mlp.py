@@ -76,12 +76,12 @@ def split_data(x_data, y_data, ids_data, sample_size, is_mean, is_sparse, ids, i
 
 def scale_data(is_mean, x_train, x_test):
     # Scale
-    scaler = StandardScaler(with_mean=is_mean)  
+    #scaler = StandardScaler(with_mean=is_mean)  
         # fit only on training data
-    scaler.fit(x_train)  
-    x_train = scaler.transform(x_train)  
+    #scaler.fit(x_train)  
+    #x_train = scaler.transform(x_train)  
         # apply same transformation to test data
-    x_test = scaler.transform(x_test)  
+    #x_test = scaler.transform(x_test)  
     return x_train, x_test
 
 def load_split_scale_data(x_datafile, y_datafile, ids, testfiles,
