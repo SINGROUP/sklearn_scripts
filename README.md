@@ -53,3 +53,5 @@ details can be changed in sklearn_krr_mlp.py
 By default alpha=1e-3 and gamma=1e-5 are used.
 They can be changed in the INPUT section in sklearn_krr_mlp.py for the specific runtype
 
+# FPS
+Farthest point sampling
